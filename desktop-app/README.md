@@ -26,26 +26,21 @@ Designed to help you stay focused during work and rest cycles — perfect for pr
 
 ---
 
-## 💡 Motivation
-
-The **Pomodoro Technique** is based on breaking work into focused intervals (usually 25 minutes) followed by short breaks.  
-It helps improve concentration, maintain energy levels, and prevent burnout.
-
----
-
 ## 🖥️ Platforms
 
 | Platform | Supported |
-|-----------|-------|
-| Windows | ✅ |
-| MacOS | ✅ |
+| -------- | --------- |
+| Windows  | ✅        |
+| MacOS    | ✅        |
 
 ---
 
 ## ⚙️ Installation
 
 ### Run locally
+
 ```bash
 cd interval-timer
 flutter pub get
 flutter run
+```
