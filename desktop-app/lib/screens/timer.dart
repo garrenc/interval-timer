@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:interval_timer/services/app_state.dart';
 import 'package:interval_timer/components/top_bar.dart';
@@ -23,6 +24,9 @@ class _TimerScreenState extends State<TimerScreen> {
   Duration remaining = Duration.zero;
   int countdownValue = 3;
 
+  final AudioPlayer _workStartSound = AudioPlayer();
+  final AudioPlayer _workEndSound = AudioPlayer();
+
   // Cycle tracking
   int currentCycle = 1;
   int currentInterval = 1;
@@ -31,6 +35,8 @@ class _TimerScreenState extends State<TimerScreen> {
   @override
   void initState() {
     super.initState();
+    _workStartSound.setSource(UrlSource('assets/sounds/work_start.mp3'));
+    _workEndSound.setSource(UrlSource('assets/sounds/work_done.mp3'));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final app = AppStateScope.of(context);
       _startTimerAutomatically(app);
@@ -40,6 +46,8 @@ class _TimerScreenState extends State<TimerScreen> {
   @override
   void dispose() {
     _ticker?.cancel();
+    _workStartSound.dispose();
+    _workEndSound.dispose();
     super.dispose();
   }
 
@@ -105,6 +113,8 @@ class _TimerScreenState extends State<TimerScreen> {
         if (app.enableNotifications) {
           NotificationService().showSessionCompletedNotification();
         }
+        // Play the work end sound
+        _workEndSound.resume();
         return;
       }
 
@@ -118,6 +128,8 @@ class _TimerScreenState extends State<TimerScreen> {
         if (app.enableNotifications) {
           NotificationService().showLongBreakStartedNotification();
         }
+        // Play the long break start sound
+        _workEndSound.resume();
       } else {
         // Move to short break
         currentPhase = TimerPhase.shortBreak;
@@ -126,6 +138,7 @@ class _TimerScreenState extends State<TimerScreen> {
         if (app.enableNotifications) {
           NotificationService().showShortBreakStartedNotification();
         }
+        _workEndSound.resume();
       }
     } else {
       // Break finished, move to work
@@ -134,6 +147,7 @@ class _TimerScreenState extends State<TimerScreen> {
       if (app.enableNotifications) {
         NotificationService().showWorkStartedNotification();
       }
+      _workStartSound.resume();
     }
 
     if (status == TimerStatus.running) {
