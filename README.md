@@ -1,7 +1,5 @@
 # 🚀 Interval Timer - Simple Startup Scripts
 
-Just run the fucking commands! No bullshit.
-
 ## Quick Start
 
 ### Linux/Mac:
@@ -29,5 +27,3 @@ Just run the fucking commands! No bullshit.
 1. Create `.env` files with your tokens
 2. Run the start script
 3. Done!
-
-That's it. No more complicated bullshit.
