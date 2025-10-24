@@ -28,9 +28,9 @@ class NotificationService {
       1,
       'Work Session Started',
       'Time to focus! Your work session has begun.',
-      const NotificationDetails(
+      NotificationDetails(
         macOS: DarwinNotificationDetails(),
-        windows: WindowsNotificationDetails(),
+        windows: WindowsNotificationDetails(audio: WindowsNotificationAudio.silent()),
       ),
     );
   }
@@ -42,9 +42,9 @@ class NotificationService {
       2,
       'Short Break Started',
       'Take a short break to recharge!',
-      const NotificationDetails(
+      NotificationDetails(
         macOS: DarwinNotificationDetails(),
-        windows: WindowsNotificationDetails(),
+        windows: WindowsNotificationDetails(audio: WindowsNotificationAudio.silent()),
       ),
     );
   }
@@ -56,9 +56,9 @@ class NotificationService {
       3,
       'Long Break Started',
       'Enjoy your longer break! You\'ve earned it.',
-      const NotificationDetails(
+      NotificationDetails(
         macOS: DarwinNotificationDetails(),
-        windows: WindowsNotificationDetails(),
+        windows: WindowsNotificationDetails(audio: WindowsNotificationAudio.silent()),
       ),
     );
   }
@@ -70,9 +70,9 @@ class NotificationService {
       4,
       'Session Completed!',
       'Great job! You\'ve completed all your work cycles.',
-      const NotificationDetails(
+      NotificationDetails(
         macOS: DarwinNotificationDetails(),
-        windows: WindowsNotificationDetails(),
+        windows: WindowsNotificationDetails(audio: WindowsNotificationAudio.silent()),
       ),
     );
   }

@@ -5,10 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:interval_timer/services/app_state.dart';
 import 'package:interval_timer/components/top_bar.dart';
 import 'package:interval_timer/services/notification_service.dart';
+import 'package:interval_timer/services/api_service.dart';
+
+import '../services/logger.dart';
 
 enum TimerStatus { idle, countdown, running, paused }
 
 enum TimerPhase { work, shortBreak, longBreak }
+
+enum TimerSound {
+  workStart,
+  workEnd;
+
+  String get path => 'assets/sounds/${this == TimerSound.workStart ? 'work_start' : 'work_done'}.mp3';
+}
 
 class TimerScreen extends StatefulWidget {
   const TimerScreen({super.key});
@@ -24,8 +34,8 @@ class _TimerScreenState extends State<TimerScreen> {
   Duration remaining = Duration.zero;
   int countdownValue = 3;
 
-  final AudioPlayer _workStartSound = AudioPlayer();
-  final AudioPlayer _workEndSound = AudioPlayer();
+  final AudioPlayer _player = AudioPlayer();
+  final ApiService _apiService = ApiService();
 
   // Cycle tracking
   int currentCycle = 1;
@@ -35,9 +45,7 @@ class _TimerScreenState extends State<TimerScreen> {
   @override
   void initState() {
     super.initState();
-    _workStartSound.setSource(UrlSource('assets/sounds/work_start.mp3'));
-    _workEndSound.setSource(UrlSource('assets/sounds/work_done.mp3'));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final app = AppStateScope.of(context);
       _startTimerAutomatically(app);
     });
@@ -46,14 +54,39 @@ class _TimerScreenState extends State<TimerScreen> {
   @override
   void dispose() {
     _ticker?.cancel();
-    _workStartSound.dispose();
-    _workEndSound.dispose();
+    _player.dispose();
     super.dispose();
+  }
+
+  Future<void> _startPauseNotification(AppState app, String type) async {
+    int minutes = type == "shortBreak" ? app.shortBreakMinutes : app.longBreakMinutes;
+    int pauseNumber = type == "shortBreak" ? currentInterval - 1 : currentCycle;
+
+    final result = await _apiService.startPause(
+      type: type,
+      minutes: minutes,
+      cycle: currentCycle,
+      pauseNumber: pauseNumber,
+    );
+
+    if (result != null && result['success'] == true) {
+      Logger.log('Pause notification started: $type for $minutes minutes');
+    }
+  }
+
+  Future<void> _cancelPauseNotification() async {
+    final result = await _apiService.cancelPause();
+    if (result != null && result['success'] == true) {
+      Logger.log('Pause notification cancelled');
+    }
   }
 
   void _startTimerAutomatically(AppState app) {
     _ticker?.cancel();
     _resetToWork(app);
+
+    // Send work started notification
+    _apiService.startWork(cycle: currentCycle, interval: currentInterval);
 
     if (app.enableCountdown) {
       status = TimerStatus.countdown;
@@ -77,6 +110,11 @@ class _TimerScreenState extends State<TimerScreen> {
         setState(() => countdownValue--);
       }
     });
+  }
+
+  Future<void> _playSound({required TimerSound sound}) async {
+    // I dont get why play needs to call source everytime i want to play it...
+    await _player.play(UrlSource(sound.path));
   }
 
   void _resetToWork(AppState app) {
@@ -114,7 +152,7 @@ class _TimerScreenState extends State<TimerScreen> {
           NotificationService().showSessionCompletedNotification();
         }
         // Play the work end sound
-        _workEndSound.resume();
+        _playSound(sound: TimerSound.workEnd);
         return;
       }
 
@@ -128,8 +166,10 @@ class _TimerScreenState extends State<TimerScreen> {
         if (app.enableNotifications) {
           NotificationService().showLongBreakStartedNotification();
         }
+        // Start pause notification
+        _startPauseNotification(app, "longBreak");
         // Play the long break start sound
-        _workEndSound.resume();
+        _playSound(sound: TimerSound.workEnd);
       } else {
         // Move to short break
         currentPhase = TimerPhase.shortBreak;
@@ -138,7 +178,9 @@ class _TimerScreenState extends State<TimerScreen> {
         if (app.enableNotifications) {
           NotificationService().showShortBreakStartedNotification();
         }
-        _workEndSound.resume();
+        // Start pause notification
+        _startPauseNotification(app, "shortBreak");
+        _playSound(sound: TimerSound.workEnd);
       }
     } else {
       // Break finished, move to work
@@ -147,7 +189,9 @@ class _TimerScreenState extends State<TimerScreen> {
       if (app.enableNotifications) {
         NotificationService().showWorkStartedNotification();
       }
-      _workStartSound.resume();
+      // Cancel pause notification
+      _cancelPauseNotification();
+      _playSound(sound: TimerSound.workStart);
     }
 
     if (status == TimerStatus.running) {

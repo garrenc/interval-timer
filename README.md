@@ -1,10 +1,50 @@
-# Interval Timer
+# 🚀 Interval Timer - Simple Startup Scripts
 
-A desktop application for managing productivity intervals with Telegram bot notifications.
+Just run the fucking commands! No bullshit.
 
-Track your work sessions, breaks, and pauses with automatic notifications sent to your Telegram bot, helping you stay focused and maintain consistent productivity habits.
+## Quick Start
 
-## 💡 Motivation
+### Linux/Mac:
 
-The **Pomodoro Technique** is based on breaking work into focused intervals (usually 25 minutes) followed by short breaks.  
-It helps improve concentration, maintain energy levels, and prevent burnout.
+```bash
+./start.sh
+```
+
+### Windows:
+
+```cmd
+start.bat
+```
+
+### Stop everything:
+
+```bash
+# Linux/Mac
+./stop.sh
+
+# Windows
+stop.bat
+```
+
+## What it does
+
+- **start.sh/start.bat**: Runs `npm start` in backend-api and `python main.py` in telegram-bot
+- **stop.sh/stop.bat**: Kills all node and python processes
+
+## Requirements
+
+1. **Node.js** installed
+2. **Python** installed
+3. **Dependencies installed**:
+   ```bash
+   cd backend-api && npm install
+   cd ../telegram-bot && pip install -r requirements.txt
+   ```
+
+## Setup
+
+1. Create `.env` files with your tokens
+2. Run the start script
+3. Done!
+
+That's it. No more complicated bullshit.
