@@ -55,12 +55,14 @@ class _TimerScreenState extends State<TimerScreen> {
   void dispose() {
     _ticker?.cancel();
     _player.dispose();
+    // End work session prematurely - so backend resets timer value
+    _apiService.endWork();
     super.dispose();
   }
 
-  Future<void> _startPauseNotification(AppState app, String type) async {
-    int minutes = type == "shortBreak" ? app.shortBreakMinutes : app.longBreakMinutes;
-    int pauseNumber = type == "shortBreak" ? currentInterval - 1 : currentCycle;
+  Future<void> _startPauseNotification(AppState app, PauseType type) async {
+    int minutes = type == PauseType.shortBreak ? app.shortBreakMinutes : app.longBreakMinutes;
+    int pauseNumber = type == PauseType.shortBreak ? currentInterval - 1 : currentCycle;
 
     final result = await _apiService.startPause(
       type: type,
@@ -74,8 +76,8 @@ class _TimerScreenState extends State<TimerScreen> {
     }
   }
 
-  Future<void> _cancelPauseNotification() async {
-    final result = await _apiService.cancelPause();
+  Future<void> _endPause() async {
+    final result = await _apiService.endPause(pauseType: currentPhase == TimerPhase.shortBreak ? PauseType.shortBreak : PauseType.longBreak);
     if (result != null && result['success'] == true) {
       Logger.log('Pause notification cancelled');
     }
@@ -86,7 +88,7 @@ class _TimerScreenState extends State<TimerScreen> {
     _resetToWork(app);
 
     // Send work started notification
-    _apiService.startWork(cycle: currentCycle, interval: currentInterval);
+    _apiService.startWork();
 
     if (app.enableCountdown) {
       status = TimerStatus.countdown;
@@ -167,7 +169,7 @@ class _TimerScreenState extends State<TimerScreen> {
           NotificationService().showLongBreakStartedNotification();
         }
         // Start pause notification
-        _startPauseNotification(app, "longBreak");
+        _startPauseNotification(app, PauseType.longBreak);
         // Play the long break start sound
         _playSound(sound: TimerSound.workEnd);
       } else {
@@ -179,18 +181,19 @@ class _TimerScreenState extends State<TimerScreen> {
           NotificationService().showShortBreakStartedNotification();
         }
         // Start pause notification
-        _startPauseNotification(app, "shortBreak");
+        _startPauseNotification(app, PauseType.shortBreak);
         _playSound(sound: TimerSound.workEnd);
       }
     } else {
+      // Cancel pause notification
+      _endPause();
       // Break finished, move to work
       currentPhase = TimerPhase.work;
       remaining = Duration(minutes: app.workMinutes);
       if (app.enableNotifications) {
         NotificationService().showWorkStartedNotification();
       }
-      // Cancel pause notification
-      _cancelPauseNotification();
+
       _playSound(sound: TimerSound.workStart);
     }
 
@@ -237,7 +240,7 @@ class _TimerScreenState extends State<TimerScreen> {
   }
 
   Color _getPhaseColor(AppState app) {
-    if (isCompleted) return Colors.grey;
+    if (isCompleted) return Colors.blueGrey;
     if (status == TimerStatus.countdown) return Colors.orange;
     switch (currentPhase) {
       case TimerPhase.work:

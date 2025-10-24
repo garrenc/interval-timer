@@ -43,18 +43,11 @@ async function sendTelegramMessage(message: string) {
   }
 }
 
-// Check for pause completion every second
-setInterval(() => {
-  if (currentPause && new Date() >= currentPause.endTime) {
-    const message =
-      currentPause.type === "shortBreak"
-        ? `☕ <b>Short break finished!</b>\nCycle ${currentPause.cycle}, Pause ${currentPause.pauseNumber}\nTime to get back to work!`
-        : `🏆 <b>Long break finished!</b>\nCycle ${currentPause.cycle}, Pause ${currentPause.pauseNumber}\nTime to get back to work!`;
-
-    sendTelegramMessage(message);
-    currentPause = null;
-  }
-}, 1000);
+function getPauseMessage(pauseType: "shortBreak" | "longBreak"): string {
+  return `${
+    pauseType === "shortBreak" ? "☕ Short Break" : "🌳 Long Break"
+  }<b>is finished!</b>\nTime to get back to work!`;
+}
 
 app.get("/", (_req, res) => {
   res.json({ ok: true, message: "API running" });
@@ -64,7 +57,7 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true, uptime: process.uptime() });
 });
 
-// Start a pause timer
+// get a pause from desktop app and save it to variable - it will be used to check if the pause is completed on telegram side
 app.post("/api/pause/start", (req, res) => {
   const { type, minutes, cycle, pauseNumber } = req.body;
 
@@ -80,10 +73,11 @@ app.post("/api/pause/start", (req, res) => {
 
 // Start work session
 app.post("/api/work/start", (req, res) => {
-  const { cycle, interval } = req.body;
-
   sendTelegramMessage(
-    `🎯 <b>Work session started!</b>\nCycle ${cycle}, Interval ${interval}`
+    `
+    🎯 <b>Work session started!</b>
+    ________________________________
+    `
   );
 
   res.json({
@@ -92,10 +86,21 @@ app.post("/api/work/start", (req, res) => {
   });
 });
 
-// Cancel current pause
-app.post("/api/pause/cancel", (_req, res) => {
+app.post("/api/work/end", (req, res) => {
   currentPause = null;
-  sendTelegramMessage("⏹️ <b>Pause cancelled!</b>");
+
+  res.json({
+    success: true,
+    message: "Work session ended",
+  });
+});
+
+// End current pause timer
+app.post("/api/pause/end", (req, res) => {
+  const pauseType = req.body.pauseType as "shortBreak" | "longBreak";
+  const message = getPauseMessage(pauseType);
+  currentPause = null;
+  sendTelegramMessage(message);
 
   res.json({
     success: true,

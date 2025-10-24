@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 
 import 'logger.dart';
 
+enum PauseType { shortBreak, longBreak }
+
 class ApiService {
   static const String baseUrl = 'http://localhost:8080';
 
@@ -12,7 +14,7 @@ class ApiService {
 
   // Start a pause timer
   Future<Map<String, dynamic>?> startPause({
-    required String type, // "shortBreak" or "longBreak"
+    required PauseType type,
     required int minutes,
     required int cycle,
     required int pauseNumber,
@@ -22,7 +24,7 @@ class ApiService {
         Uri.parse('$baseUrl/api/pause/start'),
         headers: _headers,
         body: jsonEncode({
-          'type': type,
+          'type': type.name,
           'minutes': minutes,
           'cycle': cycle,
           'pauseNumber': pauseNumber,
@@ -41,19 +43,9 @@ class ApiService {
   }
 
   // Start work session
-  Future<Map<String, dynamic>?> startWork({
-    required int cycle,
-    required int interval,
-  }) async {
+  Future<Map<String, dynamic>?> startWork() async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/work/start'),
-        headers: _headers,
-        body: jsonEncode({
-          'cycle': cycle,
-          'interval': interval,
-        }),
-      );
+      final response = await http.post(Uri.parse('$baseUrl/api/work/start'), headers: _headers);
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -67,12 +59,30 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>?> endWork() async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl/api/work/end'), headers: _headers);
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        Logger.log('Failed to end work: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      Logger.log('Error ending work: $e');
+      return null;
+    }
+  }
+
   // Cancel current pause
-  Future<Map<String, dynamic>?> cancelPause() async {
+  Future<Map<String, dynamic>?> endPause({required PauseType pauseType}) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/pause/cancel'),
+        Uri.parse('$baseUrl/api/pause/end'),
         headers: _headers,
+        body: jsonEncode({
+          'pauseType': pauseType.name,
+        }),
       );
 
       if (response.statusCode == 200) {
