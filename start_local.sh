@@ -19,12 +19,6 @@ python main.py &
 BOT_PID=$!
 cd ..
 
-
-echo "Starting flutter app..."
-cd desktop-app
-flutter run 
-cd ..
-
 echo "System started!"
 echo "Backend API PID: $BACKEND_PID"
 echo "Telegram Bot PID: $BOT_PID"
