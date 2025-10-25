@@ -1,22 +1,15 @@
 # 🚀 Interval Timer - Simple Startup Scripts
 
-## Quick Start
+## Local start script
 
-### Linux/Mac:
-
-```bash
-./start.sh
-```
-
-## What it does
-
-- **start_local.sh**: Runs `npm start` in backend-api and `python main.py` in telegram-bot and `flutter run` in desktop-app
+- **start_local.sh**: Runs `npm start` in backend-api and `python main.py` in telegram-bot - fully setup backend for local debug purposes
 
 ## Requirements
 
-1. **Node.js** installed
-2. **Python** installed
-3. **Dependencies installed**:
+1. **Node.js** installed (used v20.16.0 during development)
+2. **Python** installed (used v3.12.10 during development)
+3. **Flutter installed** (used v3.35.6 during development)
+4. **Dependencies installed**:
    ```bash
    cd backend-api && npm install
    cd ../telegram-bot && pip install -r requirements.txt
