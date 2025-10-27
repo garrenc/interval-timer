@@ -46,6 +46,7 @@ class _EyeBreakDialogState extends State<_EyeBreakDialog> {
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_remaining <= 1) {
         timer.cancel();
+        // Auto-complete when timer runs out
         widget.onComplete();
       } else {
         setState(() => _remaining--);
@@ -272,8 +273,14 @@ class _TimerScreenState extends State<TimerScreen> {
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black,
-      builder: (_) => WillPopScope(
-        onWillPop: () async => false, // Prevent any dismissal attempts
+      builder: (_) => PopScope(
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          // Play completion sound
+          _playSound(sound: TimerSound.workStart);
+          // Hide/minimize window after break completes
+          appWindow.hide();
+        },
         child: _EyeBreakDialog(
           breakDuration: app.eyeProtectorBreakDurationSeconds,
           onComplete: () async {
@@ -281,6 +288,9 @@ class _TimerScreenState extends State<TimerScreen> {
 
             // Play completion sound
             _playSound(sound: TimerSound.workStart);
+
+            // Hide/minimize window after break completes
+            appWindow.hide();
 
             // Restart the eye protector timer
             _startEyeProtectorTimer(app);
@@ -326,6 +336,8 @@ class _TimerScreenState extends State<TimerScreen> {
         _startPauseNotification(app, PauseType.longBreak);
         // Play the long break start sound
         _playSound(sound: TimerSound.workEnd);
+        // Show window when break starts
+        appWindow.show();
       } else {
         // Move to short break
         currentPhase = TimerPhase.shortBreak;
@@ -337,6 +349,8 @@ class _TimerScreenState extends State<TimerScreen> {
         // Start pause notification
         _startPauseNotification(app, PauseType.shortBreak);
         _playSound(sound: TimerSound.workEnd);
+        // Show window when break starts
+        appWindow.show();
       }
     } else {
       // Cancel pause notification
@@ -349,6 +363,8 @@ class _TimerScreenState extends State<TimerScreen> {
       }
 
       _playSound(sound: TimerSound.workStart);
+      // Hide window when work starts
+      appWindow.hide();
     }
 
     if (status == TimerStatus.running) {
