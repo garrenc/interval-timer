@@ -1,7 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum StorageKey { workMinutes, shortBreakMinutes, longBreakMinutes, intervalsUntilLongBreak, totalCycles, enableCountdown, enableNotifications, workColor, shortBreakColor, longBreakColor }
+enum StorageKey {
+  workMinutes,
+  shortBreakMinutes,
+  longBreakMinutes,
+  intervalsUntilLongBreak,
+  totalCycles,
+  enableCountdown,
+  enableNotifications,
+  workColor,
+  shortBreakColor,
+  longBreakColor,
+  enableEyeProtector,
+  eyeProtectorWorkMinutes,
+  eyeProtectorBreakMinutes,
+  eyeProtectorBreakDurationSeconds,
+}
 
 class StorageService {
   static Future<void> saveSettings({
@@ -15,6 +30,10 @@ class StorageService {
     required Color workColor,
     required Color shortBreakColor,
     required Color longBreakColor,
+    required bool enableEyeProtector,
+    required int eyeProtectorWorkMinutes,
+    required int eyeProtectorBreakMinutes,
+    required int eyeProtectorBreakDurationSeconds,
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -28,6 +47,10 @@ class StorageService {
     await prefs.setInt(StorageKey.workColor.name, workColor.toARGB32());
     await prefs.setInt(StorageKey.shortBreakColor.name, shortBreakColor.toARGB32());
     await prefs.setInt(StorageKey.longBreakColor.name, longBreakColor.toARGB32());
+    await prefs.setBool(StorageKey.enableEyeProtector.name, enableEyeProtector);
+    await prefs.setInt(StorageKey.eyeProtectorWorkMinutes.name, eyeProtectorWorkMinutes);
+    await prefs.setInt(StorageKey.eyeProtectorBreakMinutes.name, eyeProtectorBreakMinutes);
+    await prefs.setInt(StorageKey.eyeProtectorBreakDurationSeconds.name, eyeProtectorBreakDurationSeconds);
   }
 
   static Future<Map<String, dynamic>> loadSettings() async {
@@ -44,6 +67,10 @@ class StorageService {
       'workColor': Color(prefs.getInt(StorageKey.workColor.name) ?? const Color.fromARGB(255, 186, 73, 73).toARGB32()),
       'shortBreakColor': Color(prefs.getInt(StorageKey.shortBreakColor.name) ?? const Color(0xFF388E3C).toARGB32()),
       'longBreakColor': Color(prefs.getInt(StorageKey.longBreakColor.name) ?? const Color(0xFF1565C0).toARGB32()),
+      'enableEyeProtector': prefs.getBool(StorageKey.enableEyeProtector.name) ?? false,
+      'eyeProtectorWorkMinutes': prefs.getInt(StorageKey.eyeProtectorWorkMinutes.name) ?? 20,
+      'eyeProtectorBreakMinutes': prefs.getInt(StorageKey.eyeProtectorBreakMinutes.name) ?? 20,
+      'eyeProtectorBreakDurationSeconds': prefs.getInt(StorageKey.eyeProtectorBreakDurationSeconds.name) ?? 20,
     };
   }
 }

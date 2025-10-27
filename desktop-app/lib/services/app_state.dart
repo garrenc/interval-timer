@@ -15,6 +15,12 @@ class AppState extends ChangeNotifier {
   Color shortBreakColor;
   Color longBreakColor;
 
+  // Eye Protector settings
+  bool enableEyeProtector;
+  int eyeProtectorWorkMinutes;
+  int eyeProtectorBreakMinutes;
+  int eyeProtectorBreakDurationSeconds;
+
   AppState({
     this.workMinutes = 25,
     this.shortBreakMinutes = 5,
@@ -26,6 +32,10 @@ class AppState extends ChangeNotifier {
     this.workColor = const Color.fromARGB(255, 186, 73, 73),
     this.shortBreakColor = const Color(0xFF388E3C),
     this.longBreakColor = const Color(0xFF1565C0),
+    this.enableEyeProtector = false,
+    this.eyeProtectorWorkMinutes = 20,
+    this.eyeProtectorBreakMinutes = 20,
+    this.eyeProtectorBreakDurationSeconds = 20,
   });
 
   static Future<AppState> create() async {
@@ -41,6 +51,10 @@ class AppState extends ChangeNotifier {
       workColor: settings['workColor'],
       shortBreakColor: settings['shortBreakColor'],
       longBreakColor: settings['longBreakColor'],
+      enableEyeProtector: settings['enableEyeProtector'],
+      eyeProtectorWorkMinutes: settings['eyeProtectorWorkMinutes'],
+      eyeProtectorBreakMinutes: settings['eyeProtectorBreakMinutes'],
+      eyeProtectorBreakDurationSeconds: settings['eyeProtectorBreakDurationSeconds'],
     );
   }
 
@@ -104,6 +118,30 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setEyeProtectorEnabled(bool enabled) {
+    enableEyeProtector = enabled;
+    _saveSettings();
+    notifyListeners();
+  }
+
+  void setEyeProtectorWorkMinutes(int minutes) {
+    eyeProtectorWorkMinutes = minutes;
+    _saveSettings();
+    notifyListeners();
+  }
+
+  void setEyeProtectorBreakMinutes(int minutes) {
+    eyeProtectorBreakMinutes = minutes;
+    _saveSettings();
+    notifyListeners();
+  }
+
+  void setEyeProtectorBreakDurationSeconds(int seconds) {
+    eyeProtectorBreakDurationSeconds = seconds;
+    _saveSettings();
+    notifyListeners();
+  }
+
   void _saveSettings() {
     StorageService.saveSettings(
       workMinutes: workMinutes,
@@ -116,6 +154,10 @@ class AppState extends ChangeNotifier {
       workColor: workColor,
       shortBreakColor: shortBreakColor,
       longBreakColor: longBreakColor,
+      enableEyeProtector: enableEyeProtector,
+      eyeProtectorWorkMinutes: eyeProtectorWorkMinutes,
+      eyeProtectorBreakMinutes: eyeProtectorBreakMinutes,
+      eyeProtectorBreakDurationSeconds: eyeProtectorBreakDurationSeconds,
     );
   }
 }

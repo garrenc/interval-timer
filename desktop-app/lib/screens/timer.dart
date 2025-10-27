@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:interval_timer/services/app_state.dart';
 import 'package:interval_timer/components/top_bar.dart';
@@ -20,6 +21,102 @@ enum TimerSound {
   String get path => 'assets/sounds/${this == TimerSound.workStart ? 'work_start' : 'work_done'}.mp3';
 }
 
+class _EyeBreakDialog extends StatefulWidget {
+  final int breakDuration;
+  final VoidCallback onComplete;
+
+  const _EyeBreakDialog({required this.breakDuration, required this.onComplete});
+
+  @override
+  State<_EyeBreakDialog> createState() => _EyeBreakDialogState();
+}
+
+class _EyeBreakDialogState extends State<_EyeBreakDialog> {
+  late int _remaining;
+  Timer? _countdownTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _remaining = widget.breakDuration;
+    _startCountdown();
+  }
+
+  void _startCountdown() {
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remaining <= 1) {
+        timer.cancel();
+        widget.onComplete();
+      } else {
+        setState(() => _remaining--);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Fullscreen blocking overlay
+    return Material(
+      color: Colors.black,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(40),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2C2C2C),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.5),
+                blurRadius: 20,
+                spreadRadius: 10,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.remove_red_eye, color: Colors.white, size: 60),
+                  SizedBox(width: 16),
+                  Text(
+                    'Eye Break',
+                    style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 40),
+              const Text(
+                'Look 6 meters away',
+                style: TextStyle(color: Colors.white70, fontSize: 24),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              Text(
+                '$_remaining',
+                style: const TextStyle(color: Colors.white, fontSize: 120, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 40),
+              const Text(
+                'Relax your eyes and focus on distant objects',
+                style: TextStyle(color: Colors.white60, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class TimerScreen extends StatefulWidget {
   const TimerScreen({super.key});
 
@@ -31,6 +128,7 @@ class _TimerScreenState extends State<TimerScreen> {
   TimerStatus status = TimerStatus.idle;
   TimerPhase currentPhase = TimerPhase.work;
   Timer? _ticker;
+  Timer? _eyeProtectorTimer;
   Duration remaining = Duration.zero;
   int countdownValue = 3;
 
@@ -54,6 +152,7 @@ class _TimerScreenState extends State<TimerScreen> {
   @override
   void dispose() {
     _ticker?.cancel();
+    _eyeProtectorTimer?.cancel();
     _player.dispose();
     // End work session prematurely - so backend resets timer value
     _apiService.endWork();
@@ -132,15 +231,70 @@ class _TimerScreenState extends State<TimerScreen> {
       if (!mounted) return;
       if (remaining.inSeconds <= 1) {
         t.cancel();
+        _eyeProtectorTimer?.cancel();
         _onPhaseComplete(app);
       } else {
         setState(() => remaining -= const Duration(seconds: 1));
       }
     });
+
+    // Start eye protector timer if enabled, in work phase, and work time >= eye focus duration
+    if (app.enableEyeProtector && currentPhase == TimerPhase.work && app.workMinutes >= app.eyeProtectorWorkMinutes) {
+      _startEyeProtectorTimer(app);
+    }
+  }
+
+  void _startEyeProtectorTimer(AppState app) {
+    _eyeProtectorTimer?.cancel();
+    final remainingSeconds = app.workMinutes * 60 - remaining.inSeconds;
+    final eyeProtectorInterval = app.eyeProtectorWorkMinutes * 60;
+
+    // Calculate when to show the next eye protector reminder
+    final nextReminderIn = eyeProtectorInterval - (remainingSeconds % eyeProtectorInterval);
+
+    _eyeProtectorTimer = Timer(Duration(seconds: nextReminderIn), () {
+      if (!mounted) return;
+      if (status == TimerStatus.running && currentPhase == TimerPhase.work) {
+        _showEyeProtectorDialog(app);
+      }
+    });
+  }
+
+  void _showEyeProtectorDialog(AppState app) async {
+    // Play sound
+    _playSound(sound: TimerSound.workEnd);
+
+    // Bring window to front
+    appWindow.show();
+
+    // Show blocking dialog
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black,
+      builder: (_) => WillPopScope(
+        onWillPop: () async => false, // Prevent any dismissal attempts
+        child: _EyeBreakDialog(
+          breakDuration: app.eyeProtectorBreakDurationSeconds,
+          onComplete: () async {
+            Navigator.of(context).pop();
+
+            // Play completion sound
+            _playSound(sound: TimerSound.workStart);
+
+            // Restart the eye protector timer
+            _startEyeProtectorTimer(app);
+          },
+        ),
+      ),
+    );
   }
 
   void _onPhaseComplete(AppState app) {
     if (isCompleted) return;
+
+    // Cancel eye protector timer
+    _eyeProtectorTimer?.cancel();
 
     if (currentPhase == TimerPhase.work) {
       // Check if this was the last interval of the last cycle
@@ -206,6 +360,7 @@ class _TimerScreenState extends State<TimerScreen> {
   void _togglePause(AppState app) {
     if (status == TimerStatus.running) {
       _ticker?.cancel();
+      _eyeProtectorTimer?.cancel();
       setState(() => status = TimerStatus.paused);
     } else if (status == TimerStatus.paused) {
       status = TimerStatus.running;
@@ -216,6 +371,7 @@ class _TimerScreenState extends State<TimerScreen> {
 
   void _stop() {
     _ticker?.cancel();
+    _eyeProtectorTimer?.cancel();
     Navigator.of(context).pop(); // Navigate back to home screen
   }
 

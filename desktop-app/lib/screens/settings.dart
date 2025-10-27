@@ -54,6 +54,36 @@ class SettingsScreen extends StatelessWidget {
             inactiveThumbColor: Colors.grey,
             inactiveTrackColor: Colors.grey.withValues(alpha: 0.3),
           ),
+          const SizedBox(height: 24),
+          SwitchListTile(
+            title: const Text('Eye Protector', style: TextStyle(color: Colors.white)),
+            subtitle: const Text('Remind you to protect your eyes regularly', style: TextStyle(color: Colors.white70)),
+            value: app.enableEyeProtector,
+            onChanged: app.setEyeProtectorEnabled,
+            activeThumbColor: Colors.white,
+            inactiveThumbColor: Colors.grey,
+            inactiveTrackColor: Colors.grey.withValues(alpha: 0.3),
+          ),
+          if (app.enableEyeProtector) ...[
+            const SizedBox(height: 16),
+            _EyeProtectorSettingsTile(
+              title: 'Eyes focus duration',
+              value: app.eyeProtectorWorkMinutes,
+              onChanged: app.setEyeProtectorWorkMinutes,
+              unit: 'min',
+              min: 1,
+              max: 120,
+            ),
+            const SizedBox(height: 12),
+            _EyeProtectorSettingsTile(
+              title: 'Break duration',
+              value: app.eyeProtectorBreakDurationSeconds,
+              onChanged: app.setEyeProtectorBreakDurationSeconds,
+              unit: 'sec',
+              min: 5,
+              max: 300,
+            ),
+          ],
         ],
       ),
     );
@@ -116,6 +146,70 @@ class _ColorTile extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class _EyeProtectorSettingsTile extends StatelessWidget {
+  final String title;
+  final int value;
+  final Function(int) onChanged;
+  final String unit;
+  final int min;
+  final int max;
+
+  const _EyeProtectorSettingsTile({
+    required this.title,
+    required this.value,
+    required this.onChanged,
+    required this.unit,
+    required this.min,
+    required this.max,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              const Spacer(),
+              Text(
+                '$value $unit',
+                style: const TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: Colors.white,
+              inactiveTrackColor: Colors.white24,
+              thumbColor: Colors.white,
+              overlayColor: Colors.white.withValues(alpha: 0.2),
+              trackHeight: 3,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+            ),
+            child: Slider(
+              value: value.toDouble(),
+              min: min.toDouble(),
+              max: max.toDouble(),
+              onChanged: (v) => onChanged(v.round()),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
